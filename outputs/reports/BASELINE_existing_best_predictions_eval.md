@@ -1,0 +1,12 @@
+# Baseline Evaluation from Existing Best Prediction Files
+
+Evaluation is computed from existing patient-level prediction CSV files. No retraining or reinference was performed.
+
+| fold    | best_epoch   |   accuracy |   precision |   recall_sensitivity |   specificity |       f1 |    auroc |   average_precision |   balanced_accuracy |      mcc |   cohen_kappa |   tn |   fp |   fn |   tp | prediction_file                                |
+|:--------|:-------------|-----------:|------------:|---------------------:|--------------:|---------:|---------:|--------------------:|--------------------:|---------:|--------------:|-----:|-----:|-----:|-----:|:-----------------------------------------------|
+| 0       | 11           |   0.942857 |    0.864865 |             0.864865 |      0.963768 | 0.864865 | 0.96083  |            0.933247 |            0.914316 | 0.828633 |      0.828633 |  133 |    5 |    5 |   32 | outputs/predictions/fold0_epoch11_patients.csv |
+| 1       | 5            |   0.931429 |    0.861111 |             0.815789 |      0.963504 | 0.837838 | 0.934691 |            0.879436 |            0.889647 | 0.794867 |      0.7944   |  132 |    5 |    7 |   31 | outputs/predictions/fold1_epoch5_patients.csv  |
+| 2       | 17           |   0.914286 |    0.787879 |             0.764706 |      0.950355 | 0.776119 | 0.941176 |            0.868522 |            0.85753  | 0.723254 |      0.72313  |  134 |    7 |    8 |   26 | outputs/predictions/fold2_epoch17_patients.csv |
+| 3       | 19           |   0.913793 |    0.774194 |             0.75     |      0.950704 | 0.761905 | 0.850572 |            0.795365 |            0.850352 | 0.709423 |      0.709289 |  135 |    7 |    8 |   24 | outputs/predictions/fold3_epoch19_patients.csv |
+| 4       | 3            |   0.937143 |    0.935484 |             0.763158 |      0.985401 | 0.84058  | 0.910872 |            0.871902 |            0.87428  | 0.808381 |      0.801934 |  135 |    2 |    9 |   29 | outputs/predictions/fold4_epoch3_patients.csv  |
+| AVERAGE | -            |   0.927901 |    0.844706 |             0.791704 |      0.962746 | 0.816261 | 0.919628 |            0.869694 |            0.877225 | 0.772911 |      0.771477 |      |      |      |      |                                                |

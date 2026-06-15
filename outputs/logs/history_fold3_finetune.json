@@ -1,0 +1,107 @@
+[
+  {
+    "epoch": 20,
+    "train_loss": 0.038485720783811656,
+    "accuracy": 0.9022988505747126,
+    "balanced_accuracy": 0.831205985915493,
+    "precision": 0.7419354838709677,
+    "recall_sensitivity": 0.71875,
+    "specificity": 0.9436619717645308,
+    "f1": 0.7301587301587301,
+    "confusion_matrix": [
+      [
+        134,
+        8
+      ],
+      [
+        9,
+        23
+      ]
+    ],
+    "auroc": 0.8730193661971832
+  },
+  {
+    "epoch": 21,
+    "train_loss": 0.0314162435995756,
+    "accuracy": 0.8908045977011494,
+    "balanced_accuracy": 0.7757482394366197,
+    "precision": 0.76,
+    "recall_sensitivity": 0.59375,
+    "specificity": 0.9577464788057924,
+    "f1": 0.6666666666666666,
+    "confusion_matrix": [
+      [
+        136,
+        6
+      ],
+      [
+        13,
+        19
+      ]
+    ],
+    "auroc": 0.8527728873239437
+  },
+  {
+    "epoch": 22,
+    "train_loss": 0.03305192539857196,
+    "accuracy": 0.8850574712643678,
+    "balanced_accuracy": 0.7722271126760563,
+    "precision": 0.7307692307692307,
+    "recall_sensitivity": 0.59375,
+    "specificity": 0.9507042252851616,
+    "f1": 0.6551724137931034,
+    "confusion_matrix": [
+      [
+        135,
+        7
+      ],
+      [
+        13,
+        19
+      ]
+    ],
+    "auroc": 0.8587147887323944
+  },
+  {
+    "epoch": 23,
+    "train_loss": 0.03035959323479253,
+    "accuracy": 0.896551724137931,
+    "balanced_accuracy": 0.7671654929577465,
+    "precision": 0.8181818181818182,
+    "recall_sensitivity": 0.5625,
+    "specificity": 0.9718309858470541,
+    "f1": 0.6666666666666666,
+    "confusion_matrix": [
+      [
+        138,
+        4
+      ],
+      [
+        14,
+        18
+      ]
+    ],
+    "auroc": 0.8785211267605634
+  },
+  {
+    "epoch": 24,
+    "train_loss": 0.026412944625081338,
+    "accuracy": 0.8908045977011494,
+    "balanced_accuracy": 0.799955985915493,
+    "precision": 0.7241379310344828,
+    "recall_sensitivity": 0.65625,
+    "specificity": 0.9436619717645308,
+    "f1": 0.6885245901639344,
+    "confusion_matrix": [
+      [
+        134,
+        8
+      ],
+      [
+        11,
+        21
+      ]
+    ],
+    "auroc": 0.8378080985915493
+  }
+]
