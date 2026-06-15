@@ -1,0 +1,64 @@
+data:
+  raw_dir: data/raw/circor-heart-sound/training_data
+  output_dir: data/processed_preproc_ablation
+  target_sr: 4000
+
+variants:
+  baseline_bp25_800:
+    bandpass_low: 25
+    bandpass_high: 800
+    filter_order: 4
+    spike_reduction: false
+    spectral_gating: false
+    normalize: zscore
+    heart_cycle_segmentation: false
+
+  bp25_600:
+    bandpass_low: 25
+    bandpass_high: 600
+    filter_order: 4
+    spike_reduction: false
+    spectral_gating: false
+    normalize: zscore
+    heart_cycle_segmentation: false
+
+  bp25_600_spike:
+    bandpass_low: 25
+    bandpass_high: 600
+    filter_order: 4
+    spike_reduction: true
+    spike_kernel_size: 5
+    spike_clip_sigma: 4.0
+    spectral_gating: false
+    normalize: zscore
+    heart_cycle_segmentation: false
+
+  bp25_600_spectral:
+    bandpass_low: 25
+    bandpass_high: 600
+    filter_order: 4
+    spike_reduction: false
+    spectral_gating: true
+    n_fft: 1024
+    win_length: 400
+    hop_length: 160
+    noise_sec: 0.5
+    n_std_thresh: 1.5
+    normalize: zscore
+    heart_cycle_segmentation: false
+
+  bp25_600_spike_spectral_cycle:
+    bandpass_low: 25
+    bandpass_high: 600
+    filter_order: 4
+    spike_reduction: true
+    spike_kernel_size: 5
+    spike_clip_sigma: 4.0
+    spectral_gating: true
+    n_fft: 1024
+    win_length: 400
+    hop_length: 160
+    noise_sec: 0.5
+    n_std_thresh: 1.5
+    normalize: zscore
+    heart_cycle_segmentation: true

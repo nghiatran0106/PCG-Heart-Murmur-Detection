@@ -1,0 +1,56 @@
+project:
+  name: dual_branch_bp25_600_spectral
+  seed: 42
+  output_dir: outputs_dual_branch/bp25_600_waveform_spectral_tf_full_30ep
+data:
+  raw_dir: data/raw/circor-heart-sound
+  training_dir: data/raw/circor-heart-sound/training_data
+  metadata_csv: data/raw/circor-heart-sound/training_data.csv
+  processed_dir: data/processed
+  task: murmur_binary
+  pcg_wav_root: data/processed_dual_branch/pcg_waveform_wav
+  tf_wav_root: data/processed_dual_branch/tf_image_wav
+split:
+  n_folds: 5
+preprocessing:
+  target_sr: 4000
+  bandpass_low: 25
+  bandpass_high: 800
+  filter_order: 4
+  normalize: zscore
+segmentation:
+  window_sec: 5.0
+  hop_sec: 2.5
+  padding: zero
+  min_valid_sec: 1.0
+features:
+  n_mels: 128
+  n_fft: 1024
+  win_length: 400
+  hop_length: 160
+  n_mfcc: 20
+  fmin: 25
+  fmax: 600
+model:
+  name: resnet_fusion
+  num_classes: 2
+  handcrafted_dim: 144
+  dropout: 0.3
+training:
+  epochs: 30
+  batch_size: 32
+  lr: 0.0001
+  weight_decay: 0.01
+  num_workers: 4
+  mixed_precision: true
+  early_stopping_patience: 7
+  amp: true
+  save_every: 1
+  scheduler: ReduceLROnPlateau
+  scheduler_monitor: f1
+  scheduler_factor: 0.5
+  scheduler_patience: 2
+  min_lr: 1.0e-06
+  grad_clip_norm: 1.0
+evaluation:
+  threshold: 0.5

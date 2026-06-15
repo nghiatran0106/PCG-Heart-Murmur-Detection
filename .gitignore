@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+.venv_*/
+env/
+venv/
+*.egg-info/
+
+# System/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Training/runtime cache
+data/cache*/
+.cache/
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+logs_*/
+nohup.out
+
+# Large temporary archives
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+
+# Model export temp
+wandb/
+runs/
+
+# Local Python virtual environment
+.venv_pcg/
+.venv*/
+venv/
+env/
