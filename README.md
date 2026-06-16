@@ -1,18 +1,22 @@
 # PCG Heart Murmur Detection
 
-This repository contains a reproducible baseline pipeline for heart sound classification using phonocardiogram (PCG) recordings from the CirCor heart sound dataset.
+This repository contains a reproducible baseline project for heart sound classification using phonocardiogram (PCG) recordings from the CirCor heart sound dataset.
 
-The repository is organized for clean, object-oriented development. The current runnable baseline is a dual-branch fusion model that combines:
-
-- A deep ResNet18 branch using log-Mel spectrograms
-- A handcrafted PCG feature branch
-- A fusion classifier for binary classification
-
-The current training entrypoint is:
+**Important clarification:**  
+The current reported baseline results are from the `FusionResNetClassifier` model implemented in:
 
 ```text
-src/training/train_baseline.py
+src/models/resnet_fusion.py
 ```
+
+This is **not** the later full dual-branch metadata multitask model.  
+The current baseline is a ResNet-fusion model with:
+
+- a spectrogram ResNet18 branch
+- a handcrafted-feature MLP branch
+- a fusion classifier
+
+The later idea of using `PCG branch + TF branch + metadata branch + multitask heads` is a future extension and should not be confused with the currently reported baseline results.
 
 ---
 
@@ -86,11 +90,126 @@ PCG-Heart-Murmur-Detection/
 
 ---
 
-## 3. Data
+## 3. Current Baseline Model
 
-The project uses the CirCor DigiScope heart sound dataset.
+The current baseline model is:
 
-The expected data structure is:
+```text
+FusionResNetClassifier
+```
+
+implemented in:
+
+```text
+src/models/resnet_fusion.py
+```
+
+The model code has two internal branches:
+
+```text
+1. Spectrogram branch:
+   log-Mel spectrogram → ResNet18 → deep embedding
+
+2. Handcrafted branch:
+   handcrafted PCG features → MLP → handcrafted embedding
+
+3. Fusion classifier:
+   concatenate embeddings → MLP classifier → logits
+```
+
+This model should be described as:
+
+```text
+ResNet18 + handcrafted feature fusion baseline
+```
+
+It should **not** be described as the final dual-branch metadata multitask model.
+
+---
+
+## 4. Model Definition
+
+The current baseline model is equivalent to the following structure:
+
+```python
+import torch
+import torch.nn as nn
+import torchvision.models as models
+
+
+class SpectrogramResNet18(nn.Module):
+    def __init__(self, embedding_dim=256):
+        super().__init__()
+
+        self.backbone = models.resnet18(weights=None)
+
+        self.backbone.conv1 = nn.Conv2d(
+            1,
+            64,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias=False,
+        )
+
+        in_features = self.backbone.fc.in_features
+        self.backbone.fc = nn.Linear(in_features, embedding_dim)
+
+    def forward(self, x):
+        return self.backbone(x)
+
+
+class FusionResNetClassifier(nn.Module):
+    def __init__(
+        self,
+        handcrafted_dim: int,
+        num_classes: int = 2,
+        deep_dim: int = 256,
+        hand_dim: int = 128,
+        dropout: float = 0.3,
+    ):
+        super().__init__()
+
+        self.deep_branch = SpectrogramResNet18(embedding_dim=deep_dim)
+
+        self.hand_branch = nn.Sequential(
+            nn.Linear(handcrafted_dim, hand_dim),
+            nn.BatchNorm1d(hand_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+
+            nn.Linear(hand_dim, hand_dim),
+            nn.BatchNorm1d(hand_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+        )
+
+        fusion_dim = deep_dim + hand_dim
+
+        self.classifier = nn.Sequential(
+            nn.LayerNorm(fusion_dim),
+            nn.Dropout(dropout),
+            nn.Linear(fusion_dim, 256),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, num_classes),
+        )
+
+    def forward(self, logmel, handcrafted):
+        deep_feat = self.deep_branch(logmel)
+        hand_feat = self.hand_branch(handcrafted)
+
+        fused = torch.cat([deep_feat, hand_feat], dim=1)
+        return self.classifier(fused)
+```
+
+---
+
+## 5. Data
+
+The repository keeps both raw data and processed data.
+
+Expected data structure:
 
 ```text
 data/
@@ -113,25 +232,76 @@ data/
         └── abnormal/
 ```
 
-The current runnable baseline trains from the processed final dataset:
+### 5.1 Baseline Data
+
+The baseline fusion model uses:
+
+```text
+log-Mel spectrogram input
+handcrafted PCG feature input
+```
+
+Depending on the experiment configuration, these are generated from the available processed audio paths and segment metadata.
+
+### 5.2 Processed Outcome Binary Data
+
+The folder below contains the later processed data for clinical outcome experiments:
 
 ```text
 data/processed_outcome_binary/
 ```
 
-The main segment file is:
+Main CSV:
 
 ```text
 data/processed_outcome_binary/segments_outcome_binary_win5p0.csv
 ```
 
-This file contains segment-level metadata, fold assignment, labels, and paths to the processed PCG and TF branch audio files.
+This file contains segment metadata, fold assignment, labels, and audio paths.
 
 ---
 
-## 4. Current Preprocessing Setup
+## 6. Tasks
 
-The selected final preprocessing configuration is:
+The codebase can support several tasks, depending on configuration and label selection.
+
+### 6.1 Murmur Binary
+
+```text
+Absent
+Present
+```
+
+This excludes `Unknown` murmur labels.
+
+### 6.2 Murmur 3-Class
+
+```text
+Absent
+Present
+Unknown
+```
+
+This includes the `Unknown` murmur class.
+
+### 6.3 Clinical Outcome Binary
+
+```text
+Normal
+Abnormal
+```
+
+The current OOP training entrypoint supports this through:
+
+```bash
+--task outcome_binary
+```
+
+---
+
+## 7. Current Preprocessing Notes
+
+The selected preprocessing configuration for the newer processed data is:
 
 ```text
 sr4000_bp25_600_zscore
@@ -146,132 +316,19 @@ Normalization: z-score
 Window length: 5 seconds
 ```
 
-The final data uses a dual-branch design.
-
-### 4.1 PCG Branch
+The repository may contain visualizations and processed folders related to dual-branch preprocessing. These are useful for inspection and future experiments, but the currently reported baseline results should still be attributed to:
 
 ```text
-Raw PCG
-→ resample to 4000 Hz
-→ Butterworth band-pass 25–600 Hz
-→ z-score normalization
-→ handcrafted feature extraction
-```
-
-Stored in:
-
-```text
-data/processed_outcome_binary/pcg_wav/
-```
-
-### 4.2 TF Branch
-
-```text
-Raw PCG
-→ resample to 4000 Hz
-→ Butterworth band-pass 25–600 Hz
-→ spectral gating
-→ z-score normalization
-→ log-Mel spectrogram
-→ ResNet18 branch
-```
-
-Stored in:
-
-```text
-data/processed_outcome_binary/tf_wav/
-```
-
----
-
-## 5. Current Baseline Task
-
-The current runnable baseline is configured for clinical outcome binary classification:
-
-```text
-Normal
-Abnormal
-```
-
-The training command uses:
-
-```bash
---task outcome_binary
-```
-
-The trainer also supports:
-
-```text
-outcome_binary
-murmur_binary
-murmur_3class
-```
-
-However, the currently tested baseline command is for:
-
-```text
-outcome_binary
-```
-
----
-
-## 6. Model Architecture
-
-The baseline model is implemented in:
-
-```text
-src/models/resnet_fusion.py
-```
-
-The main class is:
-
-```python
 FusionResNetClassifier
 ```
 
-The model has two branches.
-
-### 6.1 Deep Branch
-
-```text
-Input: log-Mel spectrogram
-Backbone: ResNet18
-Input channel: 1
-Output embedding dimension: 256
-```
-
-### 6.2 Handcrafted Branch
-
-```text
-Input: handcrafted PCG features
-Architecture: MLP + BatchNorm + ReLU + Dropout
-Output embedding dimension: 128
-```
-
-### 6.3 Fusion Classifier
-
-```text
-ResNet embedding + handcrafted embedding
-→ concatenation
-→ LayerNorm
-→ MLP classifier
-→ logits
-```
-
-Simplified forward pass:
-
-```python
-deep_feat = self.deep_branch(logmel)
-hand_feat = self.hand_branch(handcrafted)
-fused = torch.cat([deep_feat, hand_feat], dim=1)
-logits = self.classifier(fused)
-```
+not to the future metadata multitask model.
 
 ---
 
-## 7. Installation
+## 8. Installation
 
-Create and activate a virtual environment:
+Create a virtual environment:
 
 ```bash
 python3 -m venv .venv_pcg
@@ -307,7 +364,7 @@ PY
 
 ---
 
-## 8. Verify Repository Data
+## 9. Verify Repository Data
 
 Before training, verify that all required files exist:
 
@@ -321,8 +378,6 @@ required_paths = [
     "src/training/train_baseline.py",
     "src/models/resnet_fusion.py",
     "data/processed_outcome_binary/segments_outcome_binary_win5p0.csv",
-    "data/processed_outcome_binary/pcg_wav",
-    "data/processed_outcome_binary/tf_wav",
 ]
 
 for path in required_paths:
@@ -333,15 +388,25 @@ segments_path = Path("data/processed_outcome_binary/segments_outcome_binary_win5
 
 if segments_path.exists():
     df = pd.read_csv(segments_path)
+
     print()
     print("Segments:", len(df))
-    print("Recordings:", df["recording_id"].nunique() if "recording_id" in df.columns else "N/A")
-    print("Patients:", df["patient_id"].nunique() if "patient_id" in df.columns else "N/A")
+
+    if "recording_id" in df.columns:
+        print("Recordings:", df["recording_id"].nunique())
+
+    if "patient_id" in df.columns:
+        print("Patients:", df["patient_id"].nunique())
 
     if "outcome_label" in df.columns:
         print()
         print("Outcome labels by recording:")
         print(df[["recording_id", "outcome_label"]].drop_duplicates()["outcome_label"].value_counts())
+
+    if "murmur_label" in df.columns:
+        print()
+        print("Murmur labels by recording:")
+        print(df[["recording_id", "murmur_label"]].drop_duplicates()["murmur_label"].value_counts())
 
     if "fold" in df.columns:
         print()
@@ -354,7 +419,7 @@ Expected output should show all required paths as `OK`.
 
 ---
 
-## 9. Smoke Test
+## 10. Smoke Test
 
 Before running a full experiment, run a small smoke test:
 
@@ -371,7 +436,7 @@ python -m src.training.train_baseline \
   --max-val-segments 64
 ```
 
-This should print information similar to:
+The smoke test should print something similar to:
 
 ```text
 Train segments: 128
@@ -382,11 +447,11 @@ Epoch 001 | loss ...
 Saved best checkpoint ...
 ```
 
-If the smoke test runs successfully, the training pipeline is ready.
+If the smoke test runs successfully, the OOP training entrypoint is working.
 
 ---
 
-## 10. Train One Full Fold
+## 11. Train One Full Fold
 
 Train fold 0:
 
@@ -401,7 +466,7 @@ python -m src.training.train_baseline \
   --amp
 ```
 
-If the server is shared, use a safer command:
+On a shared server, use:
 
 ```bash
 nice -n 15 ionice -c2 -n7 python -m src.training.train_baseline \
@@ -416,7 +481,7 @@ nice -n 15 ionice -c2 -n7 python -m src.training.train_baseline \
 
 ---
 
-## 11. Train 5-Fold Baseline
+## 12. Train 5-Fold Baseline
 
 Run all 5 folds:
 
@@ -439,7 +504,7 @@ tail -f outputs/logs/baseline_5fold_nohup.log
 
 ---
 
-## 12. Training Outputs
+## 13. Training Outputs
 
 The trainer saves outputs into:
 
@@ -471,11 +536,30 @@ Patient-level metrics
 
 ---
 
-## 13. Evaluation
+## 14. Baseline Result Attribution
+
+When reporting results, use the following wording:
+
+```text
+The reported baseline results are obtained using FusionResNetClassifier,
+which fuses a ResNet18 spectrogram embedding with handcrafted PCG features.
+```
+
+Do not say:
+
+```text
+The reported baseline results are from the full dual-branch metadata multitask model.
+```
+
+because that model has not been fully trained and reported yet.
+
+---
+
+## 15. Evaluation
 
 The baseline trainer evaluates predictions at the patient level.
 
-The current binary metrics include:
+For binary classification, the metrics include:
 
 ```text
 Accuracy
@@ -500,7 +584,48 @@ src/evaluation/
 
 ---
 
-## 14. Development Convention
+## 16. Future Extension: Full Multitask Model
+
+The next planned model is not the same as the current baseline.
+
+Future model idea:
+
+```text
+TF branch:
+processed_tf_path
+→ MFCC + Mel + Chroma or log-Mel sequence
+→ CNN / Transformer / BiLSTM / Attention
+
+PCG branch:
+processed_pcg_path
+→ handcrafted waveform and spectral features
+→ MLP
+
+Metadata branch:
+age, sex, height, weight, pregnancy_status, location
+→ metadata encoder
+
+Fusion:
+TF embedding + PCG embedding + metadata embedding
+→ shared representation
+
+Heads:
+outcome head: Normal / Abnormal
+murmur head: Absent / Present / Unknown
+```
+
+Suggested future files:
+
+```text
+src/models/dualbranch_metadata_multitask.py
+src/training/train_multitask.py
+```
+
+This future model should be implemented separately and should not overwrite the current baseline.
+
+---
+
+## 17. Development Convention
 
 All new code should follow an object-oriented and modular design.
 
@@ -550,7 +675,7 @@ DualBranchMetadataMultitaskModel
 
 ---
 
-## 15. Important Leakage Rule
+## 18. Important Leakage Rule
 
 Never use target labels as model input features.
 
@@ -580,7 +705,7 @@ Labels should only be used for loss computation and evaluation.
 
 ---
 
-## 16. Git LFS
+## 19. Git LFS
 
 This repository contains many audio files and may contain model checkpoints.
 
@@ -616,7 +741,7 @@ git commit -m "Update Git LFS tracking"
 
 ---
 
-## 17. Notes About GitHub Directory Truncation
+## 20. Notes About GitHub Directory Truncation
 
 GitHub may show a message like:
 
@@ -637,7 +762,7 @@ git lfs pull
 
 ---
 
-## 18. Push Updated Repository
+## 21. Push Updated Repository
 
 After modifying code or README:
 
@@ -674,7 +799,7 @@ git rm -r --cached .venv_pcg
 
 ---
 
-## 19. Quick Start
+## 22. Quick Start
 
 For a new team member:
 
@@ -710,16 +835,16 @@ chmod +x run_baseline_5fold.sh
 
 ---
 
-## 20. Current Status
+## 23. Current Status
 
 The current repository contains:
 
 ```text
 Raw data
-Processed final data
+Processed data
 Configuration files
 Visualization figures
-Baseline FusionResNet model
+FusionResNet baseline model
 OOP baseline training entrypoint
 Evaluation utilities
 Feature extraction utilities
@@ -738,14 +863,16 @@ The current main training entrypoint is:
 src/training/train_baseline.py
 ```
 
-The current recommended training task is:
+The currently tested training task is:
 
 ```text
 outcome_binary
 ```
 
-The selected final preprocessing setup is:
+The newer selected preprocessing setup available in the repository is:
 
 ```text
 sr4000_bp25_600_zscore
 ```
+
+The future model should be implemented separately as a full PCG + TF + metadata multitask model.
