@@ -51,3 +51,25 @@ env/
 .venv*/
 venv/
 env/
+
+# Local virtual environment
+.venv_pcg/
+venv/
+__pycache__/
+*.pyc
+
+# Large/raw data
+data/raw/
+data/processed/
+data/processed_outcome_binary/pcg_wav/
+data/processed_outcome_binary/tf_wav/
+
+# Local logs/cache
+*.log
+.cache/
+.ipynb_checkpoints/
+
+# Optional large checkpoints
+*.pt
+*.pth
+*.ckpt
