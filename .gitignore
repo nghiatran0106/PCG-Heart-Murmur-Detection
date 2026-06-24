@@ -73,3 +73,30 @@ data/processed_outcome_binary/tf_wav/
 *.pt
 *.pth
 *.ckpt
+
+# Environments
+.venv_pcg/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Data
+data/CirCor2022/
+data/PhysioNet2016/
+data/CVD/
+data/raw/
+data/processed/
+data/processed_outcome_binary/
+data/processed_ablation/
+
+# Large outputs
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.log
+
+# OS/cache
+.cache/
+.DS_Store

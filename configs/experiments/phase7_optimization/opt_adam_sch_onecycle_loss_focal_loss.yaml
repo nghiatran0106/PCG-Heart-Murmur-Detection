@@ -1,0 +1,53 @@
+project:
+  name: circor_murmur_detection
+  seed: 42
+  output_dir: outputs
+data:
+  raw_dir: data/raw/circor-heart-sound
+  training_dir: data/raw/circor-heart-sound/training_data
+  metadata_csv: data/raw/circor-heart-sound/training_data.csv
+  processed_dir: data/processed
+  task: murmur_binary
+  dataset_name: CirCor2022
+split:
+  n_folds: 5
+preprocessing:
+  target_sr: 4000
+  bandpass_low: 25
+  bandpass_high: 800
+  filter_order: 4
+  normalize: zscore
+segmentation:
+  window_sec: 5.0
+  hop_sec: 2.5
+  padding: zero
+  min_valid_sec: 1.0
+features:
+  n_mels: 128
+  n_fft: 1024
+  win_length: 400
+  hop_length: 160
+  n_mfcc: 20
+model:
+  name: resnet_fusion
+  num_classes: 2
+  handcrafted_dim: 144
+  dropout: 0.3
+training:
+  epochs: 30
+  batch_size: 32
+  lr: 0.0001
+  weight_decay: 0.0001
+  num_workers: 1
+  mixed_precision: true
+  early_stopping_patience: 7
+  optimizer: adam
+  scheduler: onecycle
+  loss: focal_loss
+evaluation:
+  threshold: 0.5
+experiment_name: opt_adam_sch_onecycle_loss_focal_loss
+phase: phase7_optimization
+task:
+  name: murmur
+output_dir: outputs/experiment_results/phase7_optimization/opt_adam_sch_onecycle_loss_focal_loss
